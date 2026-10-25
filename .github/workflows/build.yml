@@ -41,6 +41,10 @@ jobs:
         env:
           PIP_CONSTRAINT: ${{ github.workspace }}/pip-constraints.txt
         run: |
+          # Explicitly use JDK 17; Buildozer/runner otherwise may select JDK 11.
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java -version
           # Remove partial build environments left by failed attempts.
           rm -rf .buildozer bin
           yes | buildozer android debug
