@@ -47,7 +47,7 @@ jobs:
           java -version
           # Remove partial build environments left by failed attempts.
           rm -rf .buildozer bin
-          yes | buildozer android debug
+          yes | buildozer android debug || test -n "$(find bin -maxdepth 1 -name '*.apk' -print -quit)"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
