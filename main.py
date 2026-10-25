@@ -282,7 +282,7 @@ class PropertySharingApp(App):
             # Built-in PDF Helvetica supports WinAnsi/ASCII, not Bengali fonts.
             # Keep the PDF valid even when a field contains unsupported glyphs.
             value = str(value).encode("ascii", "replace").decode("ascii")
-            return value.replace("\\\\", "\\\\\\\\").replace("(", "\\\\(").replace(")", "\\\\)")
+            return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
         lines = []
         for raw in self.project_text(p).splitlines():
