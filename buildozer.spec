@@ -8,9 +8,8 @@ source.include_exts = py,png,jpg,kv,ttf
 version = 0.1.0
 requirements = python3,kivy,pillow,pyjnius
 
-# Pin python-for-android to the fix for the pip BuildDependencyInstallError failure.
-p4a.branch = develop
-p4a.commit = d2ee8c5
+# Use the stable python-for-android branch compatible with the Python 3.11 CI environment.
+p4a.branch = master
 orientation = portrait
 fullscreen = 0
 
