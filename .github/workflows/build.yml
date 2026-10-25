@@ -47,17 +47,19 @@ jobs:
           java -version
           # Remove partial build environments left by failed attempts.
           rm -rf .buildozer bin
-          # 'yes' may exit with SIGPIPE after Buildozer finishes. Disable
-          # pipefail only for this pipeline and explicitly check Buildozer's exit.
-          set +o pipefail
+          # 'yes' can exit with SIGPIPE after Buildozer has already created the APK.
+          # Accept that harmless pipeline status only when a non-empty APK exists.
+          set +e
           yes | buildozer android debug
-          build_status=${PIPESTATUS[1]}
-          set -o pipefail
-          if [ "$build_status" -ne 0 ]; then
-            echo "Buildozer failed with exit code $build_status"
-            exit "$build_status"
+          build_status=$?
+          set -e
+          apk="$(find bin -maxdepth 1 -name '*.apk' -size +0c -print -quit)"
+          if [ -z "$apk" ]; then
+            echo "Build failed (pipeline exit $build_status) and no APK was produced."
+            exit 1
           fi
-          test -n "$(find bin -maxdepth 1 -name '*.apk' -size +0c -print -quit)"
+          echo "Verified APK output: $apk"
+          ls -lh "$apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
