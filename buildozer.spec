@@ -6,7 +6,7 @@ package.domain = com.realestate
 source.dir = .
 source.include_exts = py,png,jpg,kv,ttf
 version = 0.1.0
-requirements = python3,kivy,pillow,reportlab,pyjnius
+requirements = python3,kivy,pillow,pyjnius
 orientation = portrait
 fullscreen = 0
 
