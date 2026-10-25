@@ -10,7 +10,7 @@ requirements = python3,kivy,pillow,pyjnius
 
 # Pin python-for-android to the fix for the pip BuildDependencyInstallError failure.
 p4a.branch = develop
-p4a.commit = d2ee8c5
+p4a.commit = 725804ad06527fbfacb514add9a67ea7e7ee8683
 orientation = portrait
 fullscreen = 0
 
