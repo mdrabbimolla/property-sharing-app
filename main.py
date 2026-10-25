@@ -12,8 +12,6 @@ from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 
 from PIL import Image, ImageDraw
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 
 
 APP_DIR = os.path.join(
@@ -273,33 +271,89 @@ class PropertySharingApp(App):
         self.status.text = f"JPEG created: {filename}"
 
     def make_pdf(self, p):
+        """Create a small PDF using Python's standard library only."""
+        import textwrap
+
         filename = os.path.join(
             EXPORT_DIR, f"project_{p[0]}.pdf"
         )
-        pdf = canvas.Canvas(filename, pagesize=A4)
-        width, height = A4
 
-        pdf.setFillColorRGB(0.06, 0.17, 0.27)
-        pdf.rect(0, height - 95, width, 95, fill=1, stroke=0)
+        def pdf_text(value):
+            # Built-in PDF Helvetica supports WinAnsi/ASCII, not Bengali fonts.
+            # Keep the PDF valid even when a field contains unsupported glyphs.
+            value = str(value).encode("ascii", "replace").decode("ascii")
+            return value.replace("\\\\", "\\\\\\\\").replace("(", "\\\\(").replace(")", "\\\\)")
 
-        pdf.setFillColorRGB(1, 1, 1)
-        pdf.setFont("Helvetica-Bold", 19)
-        pdf.drawString(42, height - 57, "REAL ESTATE PROJECT")
+        lines = []
+        for raw in self.project_text(p).splitlines():
+            if not raw:
+                lines.append("")
+            else:
+                lines.extend(textwrap.wrap(raw, width=82) or [""])
 
-        pdf.setFillColorRGB(0.1, 0.15, 0.2)
-        pdf.setFont("Helvetica", 11)
+        # Split content across A4 pages, leaving room for the heading.
+        page_lines = []
+        current = []
+        for line in lines:
+            if len(current) >= 38:
+                page_lines.append(current)
+                current = []
+            current.append(line)
+        if current or not page_lines:
+            page_lines.append(current)
 
-        y = height - 130
-        for line in self.project_text(p).splitlines():
-            if y < 55:
-                pdf.showPage()
-                y = height - 55
-                pdf.setFont("Helvetica", 11)
+        objects = []
+        objects.append(b"<< /Type /Catalog /Pages 2 0 R >>")
+        page_refs = [f"{4 + i * 2} 0 R" for i in range(len(page_lines))]
+        objects.append(
+            ("<< /Type /Pages /Kids [" + " ".join(page_refs) +
+             f"] /Count {len(page_lines)} >>").encode("ascii")
+        )
+        objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
 
-            pdf.drawString(42, y, line[:95])
-            y -= 23
+        for page_index, lines_on_page in enumerate(page_lines):
+            page_obj_num = 4 + page_index * 2
+            content_obj_num = page_obj_num + 1
+            commands = [
+                "q 0.06 0.17 0.27 rg 0 747 595 95 re f Q",
+                "BT /F1 19 Tf 42 785 Td (REAL ESTATE PROJECT) Tj ET",
+                "BT /F1 11 Tf 42 715 Td 16 TL"
+            ]
+            for line in lines_on_page:
+                commands.append(f"({pdf_text(line)}) Tj T*")
+            commands.append("ET")
+            stream = ("\n".join(commands) + "\n").encode("ascii", "replace")
+            page_obj = (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+                f"/Resources << /Font << /F1 3 0 R >> >> "
+                f"/Contents {content_obj_num} 0 R >>"
+            ).encode("ascii")
+            content_obj = (
+                f"<< /Length {len(stream)} >>\nstream\n".encode("ascii")
+                + stream + b"endstream"
+            )
+            objects.extend([page_obj, content_obj])
 
-        pdf.save()
+        output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+        offsets = [0]
+        for number, obj in enumerate(objects, start=1):
+            offsets.append(len(output))
+            output.extend(f"{number} 0 obj\n".encode("ascii"))
+            output.extend(obj)
+            output.extend(b"\nendobj\n")
+
+        xref_offset = len(output)
+        output.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+        output.extend(b"0000000000 65535 f \n")
+        for offset in offsets[1:]:
+            output.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+        output.extend(
+            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_offset}\n%%EOF\n".encode("ascii")
+        )
+
+        with open(filename, "wb") as pdf_file:
+            pdf_file.write(output)
         self.status.text = f"PDF created: {filename}"
 
     def delete_project(self, project_id):
