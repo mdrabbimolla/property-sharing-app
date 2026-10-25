@@ -32,6 +32,8 @@ jobs:
 
       - name: Build APK
         shell: bash
+        env:
+          PIP_CONSTRAINT: ${{ github.workspace }}/pip-constraints.txt
         run: |
           # Remove partial build environments left by failed attempts.
           rm -rf .buildozer bin
