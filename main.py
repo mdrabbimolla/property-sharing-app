@@ -11,9 +11,6 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 
-from PIL import Image, ImageDraw
-
-
 APP_DIR = os.path.join(
     os.path.expanduser("~"), "property_sharing"
 )
@@ -247,6 +244,9 @@ class PropertySharingApp(App):
         )
 
     def make_jpeg(self, p):
+        # Load Pillow only when JPEG export is requested, not during app startup.
+        from PIL import Image, ImageDraw
+        os.makedirs(EXPORT_DIR, exist_ok=True)
         text = self.project_text(p)
         img = Image.new("RGB", (1080, 1350), "#f3f5f8")
         draw = ImageDraw.Draw(img)
@@ -272,6 +272,7 @@ class PropertySharingApp(App):
 
     def make_pdf(self, p):
         """Create a small PDF using Python's standard library only."""
+        os.makedirs(EXPORT_DIR, exist_ok=True)
         import textwrap
 
         filename = os.path.join(
