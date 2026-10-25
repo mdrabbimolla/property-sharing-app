@@ -30,15 +30,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install buildozer "cython==0.29.36"
 
-      - name: Accept Android SDK licenses
-        run: |
-          mkdir -p "$HOME/.buildozer"
-          yes | true
-
       - name: Build APK
         shell: bash
         run: |
-          set -o pipefail
           yes | buildozer android debug
 
       - name: Upload APK artifact
