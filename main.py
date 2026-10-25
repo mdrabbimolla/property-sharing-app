@@ -366,4 +366,38 @@ class PropertySharingApp(App):
 
 
 if __name__ == "__main__":
-    PropertySharingApp().run()
+    try:
+        PropertySharingApp().run()
+    except Exception:
+        import traceback
+        from kivy.uix.label import Label
+        from kivy.uix.scrollview import ScrollView
+
+        error_text = traceback.format_exc()
+        try:
+            log_path = os.path.join(
+                os.path.expanduser("~"), "property_sharing_startup_error.txt"
+            )
+            with open(log_path, "w", encoding="utf-8") as error_file:
+                error_file.write(error_text)
+        except Exception:
+            pass
+
+        class StartupErrorApp(App):
+            def build(self):
+                root = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(8))
+                root.add_widget(Label(
+                    text="Startup error detected. Please send this screen to support.",
+                    size_hint_y=None, height=dp(72)
+                ))
+                scroll = ScrollView()
+                detail = Label(
+                    text=error_text, size_hint_y=None, valign="top",
+                    halign="left", text_size=(None, None)
+                )
+                detail.bind(texture_size=lambda w, size: setattr(w, "height", size[1]))
+                scroll.add_widget(detail)
+                root.add_widget(scroll)
+                return root
+
+        StartupErrorApp().run()
