@@ -29,7 +29,13 @@ jobs:
           sudo apt-get install -y \
             build-essential ccache git zip unzip openjdk-17-jdk \
             autoconf libtool pkg-config zlib1g-dev libncurses5-dev \
-            libncursesw5-dev cmake libffi-dev libssl-dev
+            libncursesw5-dev cmake libffi-dev libssl-dev librsvg2-bin
+
+      - name: Render launcher icon
+        run: |
+          rsvg-convert -w 512 -h 512 icon.svg -o icon.png
+          file icon.png
+          test -s icon.png
 
       - name: Install Buildozer
         run: |
@@ -41,14 +47,10 @@ jobs:
         env:
           PIP_CONSTRAINT: ${{ github.workspace }}/pip-constraints.txt
         run: |
-          # Explicitly use JDK 17; Buildozer/runner otherwise may select JDK 11.
           export JAVA_HOME="$JAVA_HOME_17_X64"
           export PATH="$JAVA_HOME/bin:$PATH"
           java -version
-          # Remove partial build environments left by failed attempts.
           rm -rf .buildozer bin
-          # 'yes' can exit with SIGPIPE after Buildozer has already created the APK.
-          # Accept that harmless pipeline status only when a non-empty APK exists.
           set +e
           yes | buildozer android debug
           build_status=$?
